@@ -1,16 +1,7 @@
 # VibeAmp
 
-AI-powered music transcription and translation web app that downloads audio from YouTube URLs, transcribes lyrics using OpenAI's Whisper model, and provides synchronized playback with optional English translation.
+VibeAmp is a music transcription and translation web app that downloads audio from YouTube URLs, transcribes lyrics using OpenAI's Whisper model, and provides synchronized playback with optional English translation.
 
-## Features
-
-- Download audio from YouTube URLs
-- Automatic transcription with timestamps using Whisper AI
-- Multi-language support with auto-detection
-- Real-time English translation
-- Synchronized lyrics playback
-- Audio visualization
-- Web-based interface
 
 ## Setup
 
@@ -34,13 +25,7 @@ python app.py
 4. Click "Process Song" to transcribe
 5. Play the audio with synchronized lyrics
 
-## API Endpoints
 
-- `GET /` - Main web interface
-- `POST /api/process` - Process YouTube URL
-- `GET /api/library` - Get processed songs
-- `GET /api/song/{id}` - Get song data
-- `GET /api/audio/{id}` - Stream audio file
 
 ## Requirements
 
