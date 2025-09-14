@@ -43,3 +43,8 @@ The web interface provides real-time playback with synchronized lyrics display, 
 - Python 3.8+
 - FFmpeg (for audio processing)
 - Internet connection (for YouTube downloads and Whisper model)
+
+## Credits
+
+The first version was coded using a simple html + whisper approach. The current version was coded using Claude-code (Anthropic), building upon the initial approach.
+
