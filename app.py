@@ -101,7 +101,6 @@ def clear_whisper_cache():
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "your-secret-key-here"
 SONGS_DIR = Path("songs")
 SONGS_DIR.mkdir(exist_ok=True)
 LIBRARY_DB = "library.json"
