@@ -2,7 +2,6 @@
 import http.server
 import socketserver
 import os
-from urllib.parse import unquote
 
 class RangeRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -10,7 +9,6 @@ class RangeRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
     
     def do_GET(self):
-        # Handle range requests for better audio streaming
         if 'Range' in self.headers:
             self.handle_range_request()
         else:
@@ -25,12 +23,11 @@ class RangeRequestHandler(http.server.SimpleHTTPRequestHandler):
         file_size = os.path.getsize(path)
         range_header = self.headers['Range']
         
-        # Parse range header
         if not range_header.startswith('bytes='):
             self.send_error(416, "Range not satisfiable")
             return
         
-        ranges = range_header[6:].split(',')[0]  # Take first range only
+        ranges = range_header[6:].split(',')[0]
         if '-' not in ranges:
             self.send_error(416, "Range not satisfiable")
             return
@@ -43,7 +40,6 @@ class RangeRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(416, "Range not satisfiable")
             return
         
-        # Send partial content
         self.send_response(206)
         self.send_header('Content-Type', self.guess_type(path))
         self.send_header('Content-Range', f'bytes {start}-{end}/{file_size}')
@@ -65,5 +61,4 @@ class RangeRequestHandler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     PORT = 8001
     with socketserver.TCPServer(("", PORT), RangeRequestHandler) as httpd:
-        print(f"Server running at http://localhost:{PORT}/")
         httpd.serve_forever()
