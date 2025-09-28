@@ -297,6 +297,54 @@
             opacity: 0.8;
         }
 
+        .song-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .share-btn {
+            background: linear-gradient(145deg, #333, #1a1a1a);
+            border: 1px outset #555;
+            border-radius: 3px;
+            color: #00ff00;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 8px;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 3px #00ff00;
+        }
+
+        .share-btn:hover {
+            background: linear-gradient(145deg, #444, #222);
+            border: 1px outset #666;
+            transform: scale(1.05);
+            box-shadow: 0 0 6px rgba(0, 255, 0, 0.3);
+        }
+
+        .open-btn {
+            background: linear-gradient(145deg, #333, #1a1a1a);
+            border: 1px outset #555;
+            border-radius: 3px;
+            color: #00ff00;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 8px;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 3px #00ff00;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .open-btn:hover {
+            background: linear-gradient(145deg, #444, #222);
+            border: 1px outset #666;
+            transform: scale(1.05);
+            box-shadow: 0 0 6px rgba(0, 255, 0, 0.3);
+            color: #00ff00;
+        }
+
         .right-panel {
             background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
             border: 2px solid #333;
@@ -690,8 +738,17 @@
             }
 
             init() {
+                // Check for URL parameter to load specific song
+                const urlParams = new URLSearchParams(window.location.search);
+                const songId = urlParams.get('song');
+
                 // Load song library on page load
-                this.loadSongLibrary();
+                this.loadSongLibrary().then(() => {
+                    // If a song ID is specified in URL, load it
+                    if (songId) {
+                        this.loadSongFromUrl(songId);
+                    }
+                });
 
                 // Setup form submission
                 document.getElementById('processForm').addEventListener('submit', (e) => this.handleFormSubmit(e));
@@ -846,6 +903,10 @@
                             <div class="song-meta">
                                 Language: ${song.detected_language} | Duration: ${this.formatDuration(song.duration)}
                             </div>
+                            <div class="song-actions">
+                                <button class="share-btn" onclick="event.stopPropagation(); app.copyShareLink('${song.song_id}')" title="Copy share link">🔗</button>
+                                <a href="/song/${song.song_id}" class="open-btn" onclick="event.stopPropagation()" title="Open in new window" target="_blank">🔗→</a>
+                            </div>
                         </div>
                     `).join('');
 
@@ -854,6 +915,7 @@
                         item.addEventListener('click', () => {
                             const songId = item.dataset.songId;
                             this.loadSong(songId);
+                            this.updateUrlParam(songId);
 
                             document.querySelectorAll('.song-item').forEach(i => i.classList.remove('active'));
                             item.classList.add('active');
@@ -1108,6 +1170,48 @@
                 }
             }
 
+            // URL parameter management
+            updateUrlParam(songId) {
+                const url = new URL(window.location);
+                url.searchParams.set('song', songId);
+                window.history.replaceState({}, '', url);
+            }
+
+            async loadSongFromUrl(songId) {
+                try {
+                    // First check if song exists in library
+                    const songElement = document.querySelector(`[data-song-id="${songId}"]`);
+                    if (songElement) {
+                        // Song exists in library, click it
+                        songElement.click();
+                    } else {
+                        // Try to load song directly
+                        await this.loadSong(songId);
+                        this.showStatus(`Loaded song from URL`, 'success');
+                    }
+                } catch (error) {
+                    this.showStatus(`Song not found: ${songId}`, 'error');
+                }
+            }
+
+            copyShareLink(songId) {
+                const url = new URL(window.location.origin + window.location.pathname);
+                url.searchParams.set('song', songId);
+
+                navigator.clipboard.writeText(url.toString()).then(() => {
+                    this.showStatus('Share link copied to clipboard!', 'success');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = url.toString();
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    this.showStatus('Share link copied to clipboard!', 'success');
+                });
+            }
+
             // Audio Visualization
             createVisualizerBars() {
                 // Create bass bars
@@ -1248,8 +1352,9 @@
         }
 
         // Initialize the app
+        let app; // Global reference for inline handlers
         document.addEventListener('DOMContentLoaded', () => {
-            new MusicApp();
+            app = new MusicApp();
         });
     </script>
 </body>

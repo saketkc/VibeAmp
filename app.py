@@ -179,35 +179,109 @@ class VibeAmpProcessor:
             elif progress_callback and d["status"] == "finished":
                 progress_callback("Converting audio to MP3")
 
-        ydl_opts = {
-            "format": "bestaudio/best",
-            "outtmpl": str(song_dir / "%(title)s.%(ext)s"),
-            "progress_hooks": [progress_hook],
-            "postprocessors": [
-                {
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }
-            ],
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(youtube_url, download=False)
-            title = info.get("title", "Unknown")
-            duration = info.get("duration", 0)
-            if progress_callback:
-                if duration:
-                    progress_callback(f"Starting download: {duration}s audio")
-                else:
-                    progress_callback("Starting audio download")
-            ydl.download([youtube_url])
-            for file_path in song_dir.glob("*.mp3"):
-                if file_path.name != "audio.mp3":
-                    file_path.rename(audio_path)
-                    break
-            if progress_callback:
-                progress_callback("Audio download completed")
-            return str(audio_path), title, duration
+        # Try multiple extraction approaches for problematic videos
+        ydl_opts_list = [
+            # Standard approach
+            {
+                "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best[height<=720]/best",
+                "outtmpl": str(song_dir / "%(title)s.%(ext)s"),
+                "progress_hooks": [progress_hook],
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "192",
+                    }
+                ],
+                "ignoreerrors": False,
+                "no_warnings": False,
+            },
+            # Fallback with different client
+            {
+                "format": "bestaudio/best",
+                "outtmpl": str(song_dir / "%(title)s.%(ext)s"),
+                "progress_hooks": [progress_hook],
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "192",
+                    }
+                ],
+                "ignoreerrors": False,
+                "no_warnings": False,
+                "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+            },
+            # Last resort - any available format
+            {
+                "format": "worst",
+                "outtmpl": str(song_dir / "%(title)s.%(ext)s"),
+                "progress_hooks": [progress_hook],
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "192",
+                    }
+                ],
+                "ignoreerrors": False,
+                "no_warnings": False,
+                "extractor_args": {"youtube": {"player_client": ["android", "web", "tv"]}},
+            }
+        ]
+        # Try different extraction methods
+        last_error = None
+        for i, ydl_opts in enumerate(ydl_opts_list):
+            try:
+                if progress_callback and i > 0:
+                    progress_callback(f"Trying alternative method {i+1}")
+
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(youtube_url, download=False)
+                    title = info.get("title", "Unknown")
+                    duration = info.get("duration", 0)
+
+                    # Check if any downloadable formats are available
+                    formats = info.get("formats", [])
+                    has_audio = any(f.get("acodec") != "none" for f in formats)
+                    has_video = any(f.get("vcodec") != "none" for f in formats)
+
+                    if not has_audio and not has_video:
+                        raise Exception("No audio or video streams available for this video")
+
+                    if progress_callback:
+                        if duration:
+                            progress_callback(f"Starting download: {duration}s audio")
+                        else:
+                            progress_callback("Starting audio download")
+
+                    ydl.download([youtube_url])
+
+                    # Find and rename the downloaded file
+                    for file_path in song_dir.glob("*.mp3"):
+                        if file_path.name != "audio.mp3":
+                            file_path.rename(audio_path)
+                            break
+
+                    if progress_callback:
+                        progress_callback("Audio download completed")
+                    return str(audio_path), title, duration
+
+            except Exception as e:
+                last_error = e
+                if progress_callback:
+                    progress_callback(f"Method {i+1} failed, trying next...")
+                continue
+
+        # If all methods failed
+        if last_error:
+            error_msg = str(last_error)
+            if "No audio or video streams available" in error_msg:
+                raise Exception("This video appears to be restricted and has no downloadable audio/video streams. It may be region-blocked or have other restrictions.")
+            else:
+                raise Exception(f"Failed to download video after trying all methods: {error_msg}")
+        else:
+            raise Exception("Unknown error occurred during video download")
 
     def transcribe_audio(self, audio_path, force_language=None, progress_callback=None):
         model = self.load_whisper_model()
@@ -452,6 +526,22 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/song/<song_id>")
+def standalone_song(song_id):
+    # Check if song exists
+    song_dir = SONGS_DIR / song_id
+    if not song_dir.exists():
+        return render_template("index.html", error="Song not found"), 404
+
+    try:
+        metadata_path = song_dir / "metadata.json"
+        with open(metadata_path, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+        return render_template("song.html", song_id=song_id, metadata=metadata)
+    except Exception as e:
+        return render_template("index.html", error=f"Error loading song: {str(e)}"), 500
+
+
 @app.route("/api/library")
 def get_library():
     library = load_library()
@@ -571,4 +661,10 @@ def serve_audio(song_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    # Check if running in production mode
+    if os.environ.get('FLASK_ENV') == 'production':
+        from production_config import ProductionConfig
+        config = ProductionConfig()
+        app.run(host=config.HOST, port=config.PORT, debug=False, threaded=True)
+    else:
+        app.run(debug=True, port=8000)

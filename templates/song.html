@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ metadata.title }} - VibeAmp</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Courier+New&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            background:
+                radial-gradient(circle at 20% 20%, #1a1a1a 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, #2a2a2a 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%, #0a0a0a 100%);
+            color: #00ff00;
+            overflow-x: hidden;
+            min-height: 100vh;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff00 0%, #00cc00 50%, #009900 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .navigation {
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(145deg, #333, #1a1a1a);
+            border: 2px outset #555;
+            border-radius: 4px;
+            color: #00ff00;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(145deg, #444, #222);
+            border: 2px outset #666;
+            transform: translateY(-1px);
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+        }
+
+        .player-container {
+            background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            border: 2px solid #333;
+            border-top: 2px solid #555;
+            border-left: 2px solid #555;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow:
+                inset 0 1px 0 #666,
+                inset 0 -1px 0 #000,
+                inset 1px 0 0 #444,
+                inset -1px 0 0 #111,
+                0 4px 8px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .song-title {
+            color: #00ff00;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .song-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #66ff66;
+        }
+
+        .visualizer-container {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(145deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            border: 2px inset #333;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .frequency-bands {
+            display: flex;
+            height: 60px;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 1px;
+        }
+
+        .bass-section, .mid-section, .treble-section {
+            display: flex;
+            align-items: flex-end;
+            gap: 1px;
+        }
+
+        .bass-bar, .mid-bar, .treble-bar {
+            transition: height 0.05s ease;
+            border-radius: 1px;
+            border: 1px solid #001100;
+        }
+
+        .bass-bar {
+            width: 4px;
+            background: linear-gradient(to top, #003300, #00ff00);
+            box-shadow: 0 0 2px rgba(0, 255, 0, 0.5);
+        }
+
+        .mid-bar {
+            width: 3px;
+            background: linear-gradient(to top, #002200, #00dd00);
+            box-shadow: 0 0 2px rgba(0, 221, 0, 0.4);
+        }
+
+        .treble-bar {
+            width: 2px;
+            background: linear-gradient(to top, #001100, #00bb00);
+            box-shadow: 0 0 2px rgba(0, 187, 0, 0.3);
+        }
+
+        .audio-player {
+            width: 100%;
+            height: 50px;
+            margin-bottom: 20px;
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border: 2px inset #333;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .share-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .share-url {
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border: 2px inset #333;
+            border-radius: 4px;
+            color: #00ff00;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            padding: 8px;
+            width: 70%;
+            margin-right: 10px;
+            text-align: center;
+        }
+
+        .copy-btn {
+            background: linear-gradient(145deg, #333, #1a1a1a);
+            border: 2px outset #555;
+            border-radius: 4px;
+            color: #00ff00;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 8px 16px;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 3px #00ff00;
+        }
+
+        .copy-btn:hover {
+            background: linear-gradient(145deg, #444, #222);
+            border: 2px outset #666;
+            transform: scale(1.05);
+            box-shadow: 0 0 6px rgba(0, 255, 0, 0.3);
+        }
+
+        .lyrics-container {
+            background: linear-gradient(145deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            border: 2px inset #333;
+            border-radius: 6px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .lyrics-header {
+            text-align: center;
+            padding: 8px;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 1px inset #444;
+            border-radius: 4px 4px 0 0;
+            margin: -20px -20px 15px -20px;
+            color: #00ff00;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .lyric-line {
+            padding: 12px 16px;
+            margin: 4px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            line-height: 1.4;
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border: 1px solid #333;
+            color: #66ff66;
+        }
+
+        .lyric-line:hover {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 1px solid #444;
+            transform: translateX(4px);
+            box-shadow: 0 0 6px rgba(0, 255, 0, 0.2);
+        }
+
+        .lyric-line.active {
+            background: linear-gradient(145deg, #003300, #001100);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-weight: 700;
+            transform: translateX(8px);
+            box-shadow:
+                0 0 15px rgba(0, 255, 0, 0.5),
+                inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+
+        .timestamp {
+            color: #004400;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 8px;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.8;
+        }
+
+        .translated-text {
+            color: #88ff88;
+            font-style: italic;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .status-success {
+            background: linear-gradient(145deg, #003300, #001100);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+        }
+
+        @media (max-width: 768px) {
+            .share-url {
+                width: 60%;
+                margin-bottom: 10px;
+            }
+
+            .copy-btn {
+                width: 35%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="app-title">VibeAmp</h1>
+            <div class="navigation">
+                <a href="/" class="back-btn">← Back to Library</a>
+            </div>
+        </div>
+
+        <div class="player-container">
+            <div class="song-title">{{ metadata.title }}</div>
+            <div class="song-info">
+                Language: {{ metadata.detected_language }} | Duration: {{ "%.0f"|format(metadata.duration // 60) }}:{{ "%02.0f"|format(metadata.duration % 60) }}
+            </div>
+
+            <div class="visualizer-container">
+                <div class="frequency-bands" id="frequencyBands">
+                    <div class="bass-section" id="bassSection"></div>
+                    <div class="mid-section" id="midSection"></div>
+                    <div class="treble-section" id="trebleSection"></div>
+                </div>
+            </div>
+
+            <audio id="audioPlayer" class="audio-player" controls>
+                Your browser does not support the audio element.
+            </audio>
+
+            <div class="share-section">
+                <input type="text" class="share-url" id="shareUrl" readonly>
+                <button class="copy-btn" onclick="copyShareLink()">Copy Link</button>
+            </div>
+
+            <div id="statusDiv"></div>
+        </div>
+
+        <div class="lyrics-container">
+            <div class="lyrics-header">Lyrics</div>
+            <div id="lyricsContent">Loading lyrics...</div>
+        </div>
+    </div>
+
+    <script>
+        const songId = '{{ song_id }}';
+        const audioPlayer = document.getElementById('audioPlayer');
+        const lyricsContent = document.getElementById('lyricsContent');
+        const shareUrl = document.getElementById('shareUrl');
+
+        let lyrics = [];
+        let lyricLines = [];
+
+        // Audio visualization variables
+        let audioContext = null;
+        let analyser = null;
+        let source = null;
+        let dataArray = null;
+        let bassBars = [];
+        let midBars = [];
+        let trebleBars = [];
+        let animationId = null;
+
+        // Set share URL
+        shareUrl.value = window.location.href;
+
+        // Load song data
+        async function loadSongData() {
+            try {
+                const response = await fetch(`/api/song/${songId}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    showStatus('Error loading song: ' + data.error, 'error');
+                    return;
+                }
+
+                lyrics = data.lyrics;
+                audioPlayer.src = `/api/audio/${songId}`;
+                displayLyrics(lyrics);
+
+            } catch (error) {
+                showStatus('Error loading song: ' + error.message, 'error');
+            }
+        }
+
+        function displayLyrics(lyricsData) {
+            if (!lyricsData || lyricsData.length === 0) {
+                lyricsContent.innerHTML = '<div style="text-align: center; color: #66ff66;">No lyrics available</div>';
+                return;
+            }
+
+            const lyricsHtml = lyricsData.map((line, index) => {
+                const translatedHtml = line.translated && line.translated !== line.text
+                    ? `<span class="translated-text">${line.translated}</span>`
+                    : '';
+
+                return `
+                    <div class="lyric-line" data-start="${line.start}" data-end="${line.end}" data-index="${index}">
+                        <span class="timestamp">[${formatTime(line.start)}]</span>
+                        <span class="lyric-text">${line.text}</span>
+                        ${translatedHtml}
+                    </div>
+                `;
+            }).join('');
+
+            lyricsContent.innerHTML = lyricsHtml;
+
+            // Setup lyric interactions
+            setupLyricsInteraction();
+        }
+
+        function setupLyricsInteraction() {
+            const lyricElements = lyricsContent.querySelectorAll('.lyric-line');
+
+            lyricLines = Array.from(lyricElements).map(element => ({
+                element: element,
+                start: parseFloat(element.dataset.start),
+                end: parseFloat(element.dataset.end)
+            }));
+
+            lyricElements.forEach(element => {
+                element.addEventListener('click', () => {
+                    const timestamp = parseFloat(element.dataset.start);
+                    jumpToTime(timestamp);
+                });
+            });
+        }
+
+        function jumpToTime(timestamp) {
+            audioPlayer.currentTime = timestamp;
+            if (audioPlayer.paused) {
+                audioPlayer.play().catch(err => console.log('Playback failed:', err));
+            }
+        }
+
+        function updateCurrentLyric() {
+            const currentTime = audioPlayer.currentTime;
+
+            lyricLines.forEach(line => {
+                line.element.classList.remove('active');
+                if (currentTime >= line.start && currentTime <= line.end) {
+                    line.element.classList.add('active');
+
+                    // Scroll to active line
+                    line.element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            });
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function copyShareLink() {
+            shareUrl.select();
+            shareUrl.setSelectionRange(0, 99999);
+
+            navigator.clipboard.writeText(shareUrl.value).then(() => {
+                showStatus('Link copied to clipboard!', 'success');
+            }).catch(() => {
+                document.execCommand('copy');
+                showStatus('Link copied to clipboard!', 'success');
+            });
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusDiv');
+            statusDiv.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
+
+            if (type === 'success') {
+                setTimeout(() => statusDiv.innerHTML = '', 3000);
+            }
+        }
+
+        // Audio Visualization Functions
+        function createVisualizerBars() {
+            const bassSection = document.getElementById('bassSection');
+            const midSection = document.getElementById('midSection');
+            const trebleSection = document.getElementById('trebleSection');
+
+            // Create bass bars
+            for (let i = 0; i < 8; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bass-bar';
+                bar.style.height = '4px';
+                bassSection.appendChild(bar);
+                bassBars.push(bar);
+            }
+
+            // Create mid bars
+            for (let i = 0; i < 24; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'mid-bar';
+                bar.style.height = '4px';
+                midSection.appendChild(bar);
+                midBars.push(bar);
+            }
+
+            // Create treble bars
+            for (let i = 0; i < 32; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'treble-bar';
+                bar.style.height = '4px';
+                trebleSection.appendChild(bar);
+                trebleBars.push(bar);
+            }
+        }
+
+        async function initAudioVisualization() {
+            if (audioContext && audioContext.state !== 'closed') {
+                resumeVisualization();
+                return;
+            }
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 128;
+                analyser.smoothingTimeConstant = 0.8;
+
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+
+                if (!source) {
+                    source = audioContext.createMediaElementSource(audioPlayer);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                }
+
+                animate();
+
+            } catch (error) {
+                console.log('Audio visualization not supported:', error);
+                fallbackVisualization();
+            }
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
+
+                // Update bass bars
+                for (let i = 0; i < bassBars.length; i++) {
+                    const dataIndex = i;
+                    if (dataIndex < dataArray.length) {
+                        const height = (dataArray[dataIndex] / 255) * 50 + 4;
+                        bassBars[i].style.height = `${height}px`;
+                    }
+                }
+
+                // Update mid bars
+                for (let i = 0; i < midBars.length; i++) {
+                    const dataIndex = 8 + i;
+                    if (dataIndex < dataArray.length) {
+                        const height = (dataArray[dataIndex] / 255) * 50 + 4;
+                        midBars[i].style.height = `${height}px`;
+                    }
+                }
+
+                // Update treble bars
+                for (let i = 0; i < trebleBars.length; i++) {
+                    const dataIndex = 32 + i;
+                    if (dataIndex < dataArray.length) {
+                        const height = (dataArray[dataIndex] / 255) * 50 + 4;
+                        trebleBars[i].style.height = `${height}px`;
+                    }
+                }
+            }
+        }
+
+        function resumeVisualization() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            if (!animationId) {
+                animate();
+            }
+        }
+
+        function pauseVisualization() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+
+            // Reset bars to minimum height
+            [...bassBars, ...midBars, ...trebleBars].forEach(bar => {
+                bar.style.height = '4px';
+            });
+        }
+
+        function fallbackVisualization() {
+            // Simple fallback animation
+            let time = 0;
+            const fallbackAnimate = () => {
+                if (audioPlayer.paused) return;
+
+                time += 0.1;
+
+                [...bassBars, ...midBars, ...trebleBars].forEach((bar, i) => {
+                    const height = 4 + Math.sin(time + i * 0.1) * 15 + Math.random() * 10;
+                    bar.style.height = `${Math.max(height, 4)}px`;
+                });
+
+                animationId = requestAnimationFrame(fallbackAnimate);
+            };
+            fallbackAnimate();
+        }
+
+        // Initialize
+        audioPlayer.addEventListener('timeupdate', updateCurrentLyric);
+        audioPlayer.addEventListener('play', initAudioVisualization);
+        audioPlayer.addEventListener('pause', pauseVisualization);
+
+        createVisualizerBars();
+        loadSongData();
+    </script>
+</body>
+</html>
